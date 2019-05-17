@@ -4,6 +4,7 @@
 #include "cuda.h"
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -235,11 +236,41 @@ image **load_alphabet()
     }
     return alphabets;
 }
+// ###############################################################################################3
+// int _vscprintf_so(const char * format, va_list pargs) {
+//     int retval;
+//     va_list argcopy;
+//     va_copy(argcopy, pargs);
+//     retval = vsnprintf(NULL, 0, format, argcopy);
+//     va_end(argcopy);
+//     return retval;}
+// //#endif // _vscprintf
 
+// //#ifndef vasprintf
+// int vasprintf(char **strp, const char *fmt, va_list ap) {
+//     int len = _vscprintf_so(fmt, ap);
+//     if (len == -1) return -1;
+//     char *str = malloc((size_t) len + 1);
+//     if (!str) return -1;
+//     int r = vsnprintf(str, len + 1, fmt, ap); /* "secure" version of vsprintf */
+//     if (r == -1) return free(str), -1;
+//     *strp = str;
+//     return r;}
+// //#endif // vasprintf
+
+// //#ifndef asprintf
+// int asprintf(char *strp[], const char *fmt, ...) {
+//     va_list ap;
+//     va_start(ap, fmt);
+//     int r = vasprintf(strp, fmt, ap);
+//     va_end(ap);
+//     return r;}
+//#endif // asprintf
+// ########################################################################################################3
 void draw_detections(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
 {
     int i,j;
-
+    remove("coord.txt");
     for(i = 0; i < num; ++i){
         char labelstr[4096] = {0};
         int class = -1;
@@ -253,6 +284,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, names[j]);
                 }
                 printf("%s: %.0f%%\n", names[j], dets[i].prob[j]*100);
+                
             }
         }
         if(class >= 0){
@@ -289,6 +321,20 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             if(right > im.w-1) right = im.w-1;
             if(top < 0) top = 0;
             if(bot > im.h-1) bot = im.h-1;
+            
+            //WRITE CO-ORDS TO FILE
+            
+            FILE *f = fopen("coord.txt", "a");
+            if (f == NULL)
+            {
+                printf("Error opening file!\n");
+                exit(1);
+            }
+
+            char str[4096];
+            sprintf(str, "%s:BOX:l=%d:t=%d:r=%d:b=%d\n", labelstr, left, top, right, bot);
+            fputs(str, f);
+            fclose(f);
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
             if (alphabet) {
